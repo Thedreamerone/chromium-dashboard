@@ -31,7 +31,7 @@ CHROMIUM_SCHEDULE_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 def get_trials_list() -> list[dict[str, Any]]:
   """Get a list of all origin trials.
-  
+
   Returns:
     A list of data on all public origin trials.
 
@@ -42,7 +42,7 @@ def get_trials_list() -> list[dict[str, Any]]:
   """
   key = secrets.get_ot_api_key()
   # Return an empty list if no API key is found.
-  if key == None:
+  if key is None:
     return []
 
   try:
@@ -62,7 +62,7 @@ def get_trials_list() -> list[dict[str, Any]]:
   return trials_list
 
 
-def _get_trial_end_time(end_milestone: str) -> int:
+def _get_trial_end_time(end_milestone: int) -> int:
   """Get the end time of the origin trial based on end milestone.
 
   Returns:
@@ -99,7 +99,7 @@ def _get_trial_end_time(end_milestone: str) -> int:
 def _get_ot_access_token() -> str:
   """Obtain the service account credentials to be used in the request
   using the origin trials auth scope
-  
+
   Returns:
     The access token to be used for origin trials requests.
   """
@@ -111,7 +111,7 @@ def _get_ot_access_token() -> str:
   return credentials.token
 
 
-def extend_origin_trial(trial_id: str, end_milestone: str, intent_url: str):
+def extend_origin_trial(trial_id: str, end_milestone: int, intent_url: str):
   """Extend an existing origin trial.
 
   Raises:
@@ -124,7 +124,7 @@ def extend_origin_trial(trial_id: str, end_milestone: str, intent_url: str):
     return
   key = secrets.get_ot_api_key()
   # Return if no API key is found.
-  if key == None:
+  if key is None:
     return
 
   end_seconds = _get_trial_end_time(end_milestone)
@@ -136,13 +136,14 @@ def extend_origin_trial(trial_id: str, end_milestone: str, intent_url: str):
     'end_date': {
       'seconds': end_seconds
     },
-    'milestone_end': end_milestone,
+    'milestone_end': str(end_milestone),
     'extension_intent_url': intent_url,
   }
 
   try:
     response = requests.post(
         url, headers=headers, params={'key': key}, json=json)
+    logging.info(response.text)
     response.raise_for_status()
   except requests.exceptions.RequestException as e:
     logging.exception('Failed to get response from origin trials API.')

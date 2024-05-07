@@ -18,14 +18,14 @@ describe('chromedash-admin-blink-component-listing', () => {
   it('renders with data', async () => {
     const element = await fixture(
       html`<chromedash-admin-blink-component-listing
-      .id=${1}
-      .name=${'foo'}
-      .subscriberIds=${[0, 1]}
-      .ownerIds=${[0]}
-      .index=${0}
-      .usersMap=${testUsersMap}
-      ?editing=${false}
-    ></chromedash-admin-blink-component-listing>`,
+        .id=${1}
+        .name=${'foo'}
+        .subscriberIds=${[0, 1]}
+        .ownerIds=${[0]}
+        .index=${0}
+        .usersMap=${testUsersMap}
+        ?editing=${false}
+      ></chromedash-admin-blink-component-listing>`
     );
     assert.exists(element);
     assert.instanceOf(element, ChromedashAdminBlinkComponentListing);
@@ -35,14 +35,14 @@ describe('chromedash-admin-blink-component-listing', () => {
     beforeEach(async () => {
       element = await fixture(
         html`<chromedash-admin-blink-component-listing
-        .id=${1}
-        .name=${'foo'}
-        .subscriberIds=${[0, 1]}
-        .ownerIds=${[0]}
-        .index=${0}
-        .usersMap=${testUsersMap}
-        ?editing=${true}
-      ></chromedash-admin-blink-component-listing>`,
+          .id=${1}
+          .name=${'foo'}
+          .subscriberIds=${[0, 1]}
+          .ownerIds=${[0]}
+          .index=${0}
+          .usersMap=${testUsersMap}
+          ?editing=${true}
+        ></chromedash-admin-blink-component-listing>`
       );
     });
     it('calls addUser when Add button is clicked', async () => {
@@ -65,13 +65,15 @@ describe('chromedash-admin-blink-component-listing', () => {
       await element.updateComplete;
 
       expect(removeUserFn).to.have.callCount(0);
-      const removeBtn = element.shadowRoot.querySelector('.remove_owner_button');
+      const removeBtn = element.shadowRoot.querySelector(
+        '.remove_owner_button'
+      );
       removeBtn.click();
       expect(removeUserFn).to.have.callCount(1);
     });
   });
   describe('_addUser', async () => {
-    const eventListeners = {add: function() {}, remove: function() {}};
+    const eventListeners = {add: function () {}, remove: function () {}};
     let sandbox;
     let element;
     /** @type {import('sinon').SinonStubbedInstance<DefaultApi>} */
@@ -87,16 +89,16 @@ describe('chromedash-admin-blink-component-listing', () => {
 
       element = await fixture(
         html`<chromedash-admin-blink-component-listing
-        .id=${1}
-        .name=${'foo'}
-        .subscriberIds=${[0, 1]}
-        .ownerIds=${[0]}
-        .index=${0}
-        .usersMap=${testUsersMap}
-        ?editing=${true}
-        @adminRemoveComponentUser=${eventListeners.remove}
-        @adminAddComponentUser=${eventListeners.add}
-      ></chromedash-admin-blink-component-listing>`,
+          .id=${1}
+          .name=${'foo'}
+          .subscriberIds=${[0, 1]}
+          .ownerIds=${[0]}
+          .index=${0}
+          .usersMap=${testUsersMap}
+          ?editing=${true}
+          @adminRemoveComponentUser=${eventListeners.remove}
+          @adminAddComponentUser=${eventListeners.add}
+        ></chromedash-admin-blink-component-listing>`
       );
     });
     afterEach(async () => {
@@ -137,7 +139,7 @@ describe('chromedash-admin-blink-component-listing', () => {
     });
   });
   describe('_removeUser', async () => {
-    const eventListeners = {add: function() {}, remove: function() {}};
+    const eventListeners = {add: function () {}, remove: function () {}};
     let sandbox;
     let element;
     /** @type {import('sinon').SinonStubbedInstance<DefaultApi>} */
@@ -152,16 +154,16 @@ describe('chromedash-admin-blink-component-listing', () => {
 
       element = await fixture(
         html`<chromedash-admin-blink-component-listing
-        .id=${1}
-        .name=${'foo'}
-        .subscriberIds=${[0, 1]}
-        .ownerIds=${[0]}
-        .index=${0}
-        .usersMap=${testUsersMap}
-        ?editing=${true}
-        @adminRemoveComponentUser=${eventListeners.remove}
-        @adminAddComponentUser=${eventListeners.add}
-      ></chromedash-admin-blink-component-listing>`,
+          .id=${1}
+          .name=${'foo'}
+          .subscriberIds=${[0, 1]}
+          .ownerIds=${[0]}
+          .index=${0}
+          .usersMap=${testUsersMap}
+          ?editing=${true}
+          @adminRemoveComponentUser=${eventListeners.remove}
+          @adminAddComponentUser=${eventListeners.add}
+        ></chromedash-admin-blink-component-listing>`
       );
     });
     afterEach(async () => {
@@ -188,18 +190,21 @@ describe('chromedash-admin-blink-component-listing', () => {
       sandbox.assert.callCount(eventListeners.add, 0);
       sandbox.assert.callCount(eventListeners.remove, 0);
     });
-    // eslint-disable-next-line max-len
-    it('should make successful adminRemoveComponentUser event if removeUserFromComponent OK', async () => {
-      const alertStub = sandbox.stub(window, 'alert');
-      // Must select user is currently a subscriber.
-      element._getOptionsElement().options[1].selected = true;
-      client.removeUserFromComponent.resolves({});
-      element._removeUser();
-      const ev = await oneEvent(element, 'adminRemoveComponentUser');
-      expect(ev).to.exist;
-      expect(alertStub).to.have.callCount(0);
-      sandbox.assert.callCount(eventListeners.add, 0);
-      sandbox.assert.callCount(eventListeners.remove, 1);
-    });
+    it(
+      'should make successful adminRemoveComponentUser event if ' +
+        'removeUserFromComponent OK',
+      async () => {
+        const alertStub = sandbox.stub(window, 'alert');
+        // Must select user is currently a subscriber.
+        element._getOptionsElement().options[1].selected = true;
+        client.removeUserFromComponent.resolves({});
+        element._removeUser();
+        const ev = await oneEvent(element, 'adminRemoveComponentUser');
+        expect(ev).to.exist;
+        expect(alertStub).to.have.callCount(0);
+        sandbox.assert.callCount(eventListeners.add, 0);
+        sandbox.assert.callCount(eventListeners.remove, 1);
+      }
+    );
   });
 });

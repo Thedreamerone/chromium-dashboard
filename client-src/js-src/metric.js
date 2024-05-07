@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Copyright 2016 Google Inc. All rights reserved.
  *
@@ -18,6 +16,7 @@
 
 'use strict';
 
+// prettier-ignore
 (function(exports) {
 class Metric {
   static get supportsPerfNow() {

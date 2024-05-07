@@ -1,11 +1,16 @@
 import {LitElement, css, html} from 'lit';
+import {ref, createRef} from 'lit/directives/ref.js';
 import {SHARED_STYLES} from '../css/shared-css.js';
 import {openSearchHelpDialog} from './chromedash-search-help-dialog.js';
+import {QUERIABLE_FIELDS} from './queriable-fields.js';
 
-const ENTER_KEY_CODE = 13;
-
+const VOCABULARY = QUERIABLE_FIELDS.map(qf => {
+  return {name: qf.name + '=', doc: qf.doc};
+});
 
 class ChromedashFeatureFilter extends LitElement {
+  typeaheadRef = createRef();
+
   static get properties() {
     return {
       query: {type: String},
@@ -26,20 +31,10 @@ class ChromedashFeatureFilter extends LitElement {
     this.dispatchEvent(event);
   }
 
-  computeQuery() {
-    const searchBarEl = this.shadowRoot.querySelector('#searchbar');
-    return searchBarEl.value.trim();
-  }
-
-  handleSearchKey(event) {
-    if (event.keyCode == ENTER_KEY_CODE) {
-      const newQuery = this.computeQuery();
-      this._fireEvent('search', {query: newQuery});
-    }
-  }
-
   handleSearchClick() {
-    const newQuery = this.computeQuery();
+    const typeahead = this.typeaheadRef.value;
+    typeahead.hide();
+    const newQuery = typeahead.value.trim();
     this._fireEvent('search', {query: newQuery});
   }
 
@@ -47,46 +42,47 @@ class ChromedashFeatureFilter extends LitElement {
     return [
       ...SHARED_STYLES,
       css`
-      sl-icon-button {
-        font-size: 1.6rem;
-        margin: 0 !important;
-      }
-      #searchbar::part(base), #filterwidgets {
-       background: #eee;
-       border: none;
-       border-radius: 8px;
-      }
-    `];
+        sl-icon-button {
+          font-size: 1.6rem;
+          margin: 0 !important;
+        }
+      `,
+    ];
   }
 
-  showHelp() {
+  showHelp(event) {
+    event.stopPropagation();
+    const typeahead = this.typeaheadRef.value;
+    typeahead.hide();
     openSearchHelpDialog();
   }
 
-  renderSearchBar() {
-    return html`
-      <div>
-        <sl-input id="searchbar" placeholder="Search"
-            value=${this.query}
-            @keyup="${this.handleSearchKey}">
-          <sl-icon-button library="material" name="search" slot="prefix"
-              @click="${this.handleSearchClick}">
-          </sl-icon-button>
-          <sl-icon-button library="material" name="help_20px" slot="suffix"
-              @click="${this.showHelp}">
-          </sl-icon-button>
-        </sl-input>
-      </div>
-    `;
-  }
-
-
   render() {
     return html`
-      ${this.renderSearchBar()}
+      <chromedash-typeahead
+        ${ref(this.typeaheadRef)}
+        value=${this.query}
+        placeholder="Search"
+        .vocabulary=${VOCABULARY}
+        @sl-change=${this.handleSearchClick}
+      >
+        <sl-icon-button
+          library="material"
+          name="search"
+          slot="prefix"
+          @click="${this.handleSearchClick}"
+        >
+        </sl-icon-button>
+        <sl-icon-button
+          library="material"
+          name="help_20px"
+          slot="suffix"
+          @click="${this.showHelp}"
+        >
+        </sl-icon-button>
+      </chromedash-typeahead>
     `;
   }
 }
-
 
 customElements.define('chromedash-feature-filter', ChromedashFeatureFilter);

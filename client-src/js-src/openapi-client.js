@@ -1,5 +1,3 @@
-/* eslint-disable no-unused-vars */
-
 /**
  * Copyright 2016 Google Inc. All rights reserved.
  *
@@ -18,6 +16,7 @@
 
 import {DefaultApi as Api, Configuration} from 'chromestatus-openapi';
 
+// prettier-ignore
 (function(exports) {
 'use strict';
 /**

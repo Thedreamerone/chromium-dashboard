@@ -21,11 +21,12 @@ import settings
 from framework import basehandlers
 from framework import permissions
 from framework import users
-from internals import core_enums
 from internals import approval_defs
+from internals import core_enums
+from internals import notifier_helpers
+from internals import slo
 from internals.core_models import FeatureEntry, Stage
 from internals.review_models import Vote, Gate
-from internals import slo
 
 
 FIELDS_REQUIRING_LGTMS = [
@@ -159,10 +160,9 @@ def is_lgtm_allowed(from_addr, feature, approval_field):
   return allowed
 
 
-def detect_new_thread(feature_id, approval_field):
-  """Return True if there are no previous approval values for this intent."""
-  existing_votes = Vote.get_votes(
-      feature_id=feature_id, gate_type=approval_field.field_id)
+def detect_new_thread(gate_id: int) -> bool:
+  """Return True if there are no previous approval values for this gate."""
+  existing_votes = Vote.get_votes(gate_id=gate_id)
   return not existing_votes
 
 
@@ -229,8 +229,9 @@ class IntentEmailHandler(basehandlers.FlaskHandler):
       return {'message': message}
 
     self.set_intent_thread_url(stage, thread_url, subject)
-    is_new_thread = detect_new_thread(feature_id, approval_field)
-    self.create_approvals(feature, gate, approval_field, from_addr, body)
+    is_new_thread = detect_new_thread(gate_id)
+    self.create_approvals(
+        feature, stage, gate, approval_field, from_addr, body, is_new_thread)
     self.record_slo(feature, approval_field, from_addr, is_new_thread)
     return {'message': 'Done'}
 
@@ -341,9 +342,9 @@ class IntentEmailHandler(basehandlers.FlaskHandler):
     logging.info(f'Set intent_thread_url to {thread_url} '
                  f'and intent_subject_line to {subject}')
 
-  def create_approvals(self, feature: FeatureEntry, gate: Gate,
+  def create_approvals(self, feature: FeatureEntry, stage: Stage, gate: Gate,
       approval_field: approval_defs.ApprovalFieldDef,
-      from_addr: str, body: str) -> None:
+      from_addr: str, body: str, is_new_thread: bool) -> None:
     """Store either a REVIEW_REQUESTED or an APPROVED approval value."""
     feature_id = feature.key.integer_id()
 
@@ -353,12 +354,20 @@ class IntentEmailHandler(basehandlers.FlaskHandler):
     if (detect_lgtm(body) and
         is_lgtm_allowed(from_addr, feature, approval_field)):
       logging.info('found LGTM')
-      approval_defs.set_vote(feature_id, approval_field.field_id,
-          Vote.APPROVED, from_addr, gate.key.integer_id())
+      old_gate_state = gate.state
+      new_gate_state = approval_defs.set_vote(
+          feature_id, approval_field.field_id, Vote.APPROVED, from_addr,
+          gate.key.integer_id())
+      recently_approved = (old_gate_state not in (Vote.APPROVED, Vote.NA) and
+                           new_gate_state in (Vote.APPROVED, Vote.NA))
+      if (gate.gate_type == core_enums.GATE_API_EXTEND_ORIGIN_TRIAL and
+          recently_approved):
+        notifier_helpers.send_trial_extension_approved_notification(
+            feature, stage, gate.key.integer_id())
 
     # Case 2: Create a review request for any discussion that does not already
     # have any approval values stored.
-    elif detect_new_thread(feature_id, approval_field):
+    elif is_new_thread:
       logging.info('found new thread')
       if approval_field in FIELDS_REQUIRING_LGTMS:
         logging.info('requesting a review')

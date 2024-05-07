@@ -258,6 +258,52 @@ class LinkTest(testing_config.CustomTestCase):
       FeatureEntry.get_by_id(self.feature_id).ff_views_link_result, 'positive'
     )
 
+  @mock.patch.object(Link, '_parse_github_issue')
+  def test_adding_link_to_second_feature_saves_position_in_second_feature(
+    self, mockParse: mock.MagicMock
+  ):
+    mockParse.return_value = {'labels': ['position: defer']}
+
+    url = 'https://github.com/mozilla/standards-positions/issues/247'
+    changed_fields = [('ff_views_link', None, url)]
+    self.mock_user_change_fields(changed_fields)
+    self.assertEqual(1, mockParse.call_count)
+    self.assertEqual(
+      FeatureEntry.get_by_id(self.feature_id).ff_views_link_result, 'defer'
+    )
+    self.assertEqual(
+      FeatureEntry.get_by_id(self.feature2_id).ff_views_link_result, None
+    )
+    self.mock_user_change_fields(changed_fields, self.feature2)
+    self.assertEqual(
+      1, mockParse.call_count, 'Should re-use the link created for the first feature.'
+    )
+    self.assertEqual(
+      FeatureEntry.get_by_id(self.feature2_id).ff_views_link_result, 'defer'
+    )
+
+  @mock.patch.object(Link, '_parse_github_issue')
+  def test_denormalizing_github_link_without_information_doesnt_crash(
+    self, mockParse: mock.MagicMock
+  ):
+    mockParse.return_value = {'labels': ['position: defer']}
+
+    url = 'https://github.com/mozilla/standards-positions/issues/247'
+    fl = FeatureLinks(
+      feature_ids=[self.feature_id, self.feature2_id],
+      type=LINK_TYPE_GITHUB_ISSUE,
+      url=url,
+      information=None,
+    )
+    fl.put()
+    changed_fields = [('ff_views_link', None, url)]
+    self.mock_user_change_fields(changed_fields)
+
+    # It would be fine for this to become 'defer' instead of None.
+    self.assertEqual(
+      FeatureEntry.get_by_id(self.feature_id).ff_views_link_result, None
+    )
+
   def test_features_with_same_link(self):
     url = "https://github.com/GoogleChrome/chromium-dashboard/issues/999"
     query = FeatureLinks.query(FeatureLinks.url == url)
